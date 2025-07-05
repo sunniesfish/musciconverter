@@ -1,0 +1,112 @@
+# ========================================
+# Turborepo API 빌드용 .dockerignore
+# ========================================
+
+# 의존성 디렉토리 (turbo prune 후 재설치하므로 제외)
+node_modules
+**/node_modules
+.pnpm-store
+.pnpm
+
+# 빌드 결과물 (turbo prune이 처리)
+**/dist
+**/build
+**/out
+**/.next
+
+# Turborepo 캐시
+.turbo
+**/.turbo
+
+# 테스트 관련
+coverage
+**/coverage
+.nyc_output
+**/.nyc_output
+**/test
+**/tests
+**/*.spec.*
+**/*.test.*
+**/e2e
+
+# 로그 파일
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 임시 파일
+.tmp
+.temp
+**/.tmp
+**/.temp
+
+# OS 생성 파일
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE 및 에디터
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# Git 관련
+.git
+.gitignore
+**/.git
+**/.gitignore
+
+# Docker 관련
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+
+# 문서 파일
+README.md
+**/README.md
+CHANGELOG.md
+LICENSE
+*.md
+
+# CI/CD 관련
+.github
+.gitlab-ci.yml
+.travis.yml
+.circleci
+**/.github
+
+# 개발 전용 설정 파일들
+.prettierrc*
+.eslintrc*
+.editorconfig
+**/.prettierrc*
+**/.eslintrc*
+**/.editorconfig
+
+# 기타 불필요한 파일들
+*.tgz
+*.tar.gz
+.cache
+**/.cache
+
+# 환경 변수 파일 (보안상 제외, 필요시 별도 관리)
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local 
