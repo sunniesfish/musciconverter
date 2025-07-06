@@ -24,6 +24,7 @@
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "@repo/shared": "workspace:^",
     "@sunniesfish/api-rate-limiter": "^2.0.0",
     "google-auth-library": "^10.1.0",
     "googleapis": "^150.0.1",

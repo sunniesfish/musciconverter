@@ -4,11 +4,11 @@ import {
   ConvertPlaylistRequest,
   ConvertedPlaylist,
   PlaylistJSON,
-} from 'src/playlist/common/dto/playlists.dto';
+  AuthRequiredResponse,
+} from '@repo/shared';
 import { OAuthErrorInterceptor } from 'src/auth/core/interceptors/oauth-error.interceptor';
 import { OAuthInterceptor } from 'src/auth/core/interceptors/oauth.interceptor';
 import { PlatformError } from 'src/playlist/common/errors/platform.errors';
-import { AuthRequiredResponse } from 'src/playlist/common/dto/playlists.dto';
 import { ApiAccessToken } from 'src/global/decorators/api-access-token.decorator';
 import { OAuthenticationError } from 'src/auth/common/errors/oauth.errors';
 
