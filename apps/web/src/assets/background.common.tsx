@@ -1,3 +1,7 @@
 export function Background() {
-  return <div className="absolute top-0 left-0 h-full w-full -z-10" />;
+  return (
+    <div id="background" className=" absolute bg-teal-200 h-full w-full -z-50">
+      background
+    </div>
+  );
 }

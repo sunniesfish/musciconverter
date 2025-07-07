@@ -10,25 +10,121 @@ import {
 import { api } from "@/lib/api";
 import { ChevronsUpDown, Loader2 } from "lucide-react";
 import { useConvertingStore } from "@/lib/store/converting.store";
-import { ApiDomain } from "@repo/shared";
+import {
+  ApiDomain,
+  type ConvertPlaylistRequest,
+  type PlaylistConvertResponse,
+} from "@repo/shared";
 import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
+import { Input } from "@/components/ui/input";
+import { cn, validateOAuthState } from "@/lib/utils";
+import { useOAuth2Store } from "@/lib/store/oauth2.store";
+import { handleOAuthCallback } from "@/lib/utils";
+import { useOAuthMessage } from "@/lib/hooks/use-oauth";
+import { v4 as uuidv4 } from "uuid";
 
-export function ConvertLinkForm() {
+const convertLinkFormVarient = {
+  defaultMobile: { y: (window.innerHeight * 2) / 9 },
+  defaultDesktop: { y: (window.innerHeight * 2) / 9 },
+  submittedMobile: { y: 0 },
+  submittedDesktop: { y: 0 },
+  transitionMobile: {
+    type: "tween" as const,
+    duration: 0.4,
+  },
+  transitionDesktop: {
+    type: "tween" as const,
+    duration: 0.4,
+  },
+};
+
+export function ConvertLinkForm({ isMobile }: { isMobile: boolean }) {
+  const queryClient = useQueryClient();
   const [link, setLink] = useState("");
-
-  const { apiDomain, setIsConverting } = useConvertingStore(
-    useShallow((state) => state)
+  const {
+    setLink: setLinkFromOAuth2Store,
+    state,
+    setState,
+  } = useOAuth2Store(
+    useShallow((state) => ({
+      link: state.link,
+      setLink: state.setLink,
+      state: state.state,
+      setState: state.setState,
+    }))
   );
-  const { mutate, isPending } = useMutation({
-    mutationFn: () => api.convertPlaylist({ link, apiDomain }),
+
+  const { apiDomain, setIsConverting, setIsSubmitted, isSubmitted } =
+    useConvertingStore(
+      useShallow((state) => ({
+        apiDomain: state.apiDomain,
+        setIsConverting: state.setIsConverting,
+        setIsSubmitted: state.setIsSubmitted,
+        isSubmitted: state.isSubmitted,
+      }))
+    );
+  const { mutate, isPending } = useMutation<
+    PlaylistConvertResponse,
+    Error,
+    ConvertPlaylistRequest
+  >({
+    mutationKey: ["convert", [link, apiDomain]],
+    mutationFn: ({ link, apiDomain }: ConvertPlaylistRequest) =>
+      api.convertPlaylist({ link, apiDomain }),
+    onSuccess: (response) => {
+      if ("playlist" in response) {
+        queryClient.setQueryData(["convert", [link, apiDomain]], response);
+        return;
+      }
+      if ("authUrl" in response) {
+        handleOAuthCallback(response);
+        return;
+      }
+    },
+    onError: (error) => {
+      console.error(error);
+    },
   });
+
+  useOAuthMessage(
+    {
+      onSuccess: async (authCode, receivedState) => {
+        try {
+          if (!state) {
+            throw new Error("State is null");
+          }
+          if (!validateOAuthState(state, receivedState)) {
+            throw new Error("Invalid state");
+          }
+          mutate({
+            link: link,
+            apiDomain,
+            authorizationCode: authCode,
+            state: JSON.stringify(state),
+          });
+        } catch (error) {
+          console.error(error);
+        }
+      },
+      onError: (error) => {
+        console.error(error);
+      },
+    },
+    apiDomain,
+    [state]
+  );
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    mutate();
+    if (!link) return;
+    const newState = { domain: apiDomain, id: uuidv4() };
+    setState(newState);
+    setLinkFromOAuth2Store(link);
+    mutate({ link, apiDomain });
+    setIsSubmitted(true);
   };
 
   useEffect(() => {
@@ -36,22 +132,75 @@ export function ConvertLinkForm() {
   }, [isPending, setIsConverting]);
 
   return (
-    <motion.form id="convert-link-form" onSubmit={handleSubmit} className="">
-      <input
+    <motion.form
+      variants={convertLinkFormVarient}
+      initial={isMobile ? "defaultMobile" : "defaultDesktop"}
+      animate={
+        isMobile
+          ? isSubmitted
+            ? "submittedMobile"
+            : "defaultMobile"
+          : isSubmitted
+            ? "submittedDesktop"
+            : "defaultDesktop"
+      }
+      transition={
+        isMobile
+          ? convertLinkFormVarient.transitionMobile
+          : convertLinkFormVarient.transitionDesktop
+      }
+      id="convert-link-form"
+      onSubmit={handleSubmit}
+      className={cn(isMobile ? "" : "", "flex justify-center w-full")}
+    >
+      <Input
+        className={cn("bg-amber-400", isMobile ? " w-10/12" : "w-5/12")}
         type="text"
-        value={link}
+        value={link ?? ""}
         onChange={(e) => setLink(e.target.value)}
         placeholder="Enter link"
       />
+      {!isMobile && <ConvertLinkButtonDesktop />}
     </motion.form>
   );
 }
 
-export function ConvertLinkButton() {
+const convertLinkButtonVarient = {
+  defaultMobile: { y: (window.innerHeight * 2) / 6 },
+  defaultDesktop: { y: (window.innerHeight * 2) / 9 },
+  submittedMobile: { y: (window.innerHeight * 7) / 9 },
+  submittedDesktop: { y: 0 },
+};
+
+export function ConvertLinkButtonMobile() {
+  const { isConverting } = useConvertingStore(useShallow((state) => state));
+  const isSubmitted = useConvertingStore(
+    useShallow((state) => state.isSubmitted)
+  );
+  return (
+    <motion.div
+      variants={convertLinkButtonVarient}
+      initial={"defaultMobile"}
+      animate={isSubmitted ? "submittedMobile" : "defaultMobile"}
+      className="absolute w-full flex justify-center"
+    >
+      <Button type="submit" form="convert-link-form">
+        {isConverting ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          "Convert"
+        )}
+      </Button>
+      <ApiDomainSwitcher />
+    </motion.div>
+  );
+}
+
+export function ConvertLinkButtonDesktop() {
   const { isConverting } = useConvertingStore(useShallow((state) => state));
 
   return (
-    <motion.div className="">
+    <motion.div className="flex justify-cente">
       <Button type="submit" form="convert-link-form">
         {isConverting ? (
           <Loader2 className="w-4 h-4 animate-spin" />

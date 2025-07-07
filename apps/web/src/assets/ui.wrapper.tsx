@@ -9,7 +9,10 @@ export function UIWrapper({
 }) {
   return (
     <div
-      className={cn("absolute -z-1010 top-0 left-0 w-full h-full", className)}
+      className={cn(
+        "absolute -z-10 top-0 left-0 w-full h-full overflow-hidden",
+        className
+      )}
     >
       {children}
     </div>
