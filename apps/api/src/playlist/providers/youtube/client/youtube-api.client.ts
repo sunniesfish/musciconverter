@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import ApiRateLimiter from '@sunniesfish/api-rate-limiter';
-import { createYouTubeApiConfig } from './youtubeConfig';
+import { createYouTubeApiConfig, YouTubeConfig } from './youtubeConfig';
 import { OAuth2Client } from 'google-auth-library';
 import { PlatformError } from 'src/playlist/common/errors/platform.errors';
 import { OAuthenticationError } from 'src/auth/common/errors/oauth.errors';
@@ -28,9 +28,9 @@ interface YouTubeSearchResponse {
 @Injectable()
 export class YouTubeApiClient {
   private readonly apiRateLimiter: ApiRateLimiter<any>;
-  private readonly config = createYouTubeApiConfig(this.configService);
-
+  private readonly config: YouTubeConfig;
   constructor(private readonly configService: ConfigService) {
+    this.config = createYouTubeApiConfig(this.configService);
     this.apiRateLimiter = new ApiRateLimiter({
       maxPerSecond: this.config.apiLimitPerSecond,
       maxPerMinute: this.config.apiLimitPerMinute,
@@ -53,7 +53,7 @@ export class YouTubeApiClient {
     const data: PlatformResponse<T> = await response.json();
     if (response.status === 401 || response.status === 403) {
       throw new OAuthenticationError(
-        `YouTube API Authentication Error: ${data.error.message}`,
+        `YouTube API Authentication Error: ${data.error?.message}`,
       );
     }
 
@@ -64,7 +64,7 @@ export class YouTubeApiClient {
     }
 
     if (response.status >= 400) {
-      throw new PlatformError(`YouTube API Error: ${data.error.message}`);
+      throw new PlatformError(`YouTube API Error: ${data.error?.message}`);
     }
 
     return data as T;

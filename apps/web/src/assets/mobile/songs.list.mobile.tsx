@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import { useConvertingStore } from "@/lib/store/converting.store";
 import { useShallow } from "zustand/react/shallow";
 import { useOAuth2Store } from "@/lib/store/oauth2.store";
 import { Loader2 } from "lucide-react";
@@ -12,10 +11,12 @@ const songsListMobileVarient = {
 };
 
 export function SongsListMobile() {
-  const { apiDomain } = useConvertingStore(
-    useShallow((state) => state.apiDomain)
+  const { apiDomain, link } = useOAuth2Store(
+    useShallow((state) => ({
+      apiDomain: state.apiDomain,
+      link: state.link,
+    }))
   );
-  const { link } = useOAuth2Store(useShallow((state) => state.link));
   const { data, isPending } = useQuery<PlaylistConvertResponse>({
     queryKey: ["convert", [link, apiDomain]],
   });
@@ -28,7 +29,15 @@ export function SongsListMobile() {
       className="bg-red-500"
     >
       {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-      {!isPending && data ? <div></div> : <div>No data</div>}
+      {!isPending && data && "playlist" in data ? (
+        <div>
+          {data.playlist.listJson?.map((song, index) => (
+            <div key={index + (song.title ?? "")}>{song.title}</div>
+          ))}
+        </div>
+      ) : (
+        <div>No data</div>
+      )}
     </motion.div>
   );
 }

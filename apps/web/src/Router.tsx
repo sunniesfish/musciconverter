@@ -12,7 +12,9 @@ function Router() {
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <Routes>
-            <Route index element={<ConvertPage />} />
+            <Route path="/" element={<ConvertPage />}>
+              <Route path="convert" element={<div>converted list</div>} />
+            </Route>
             <Route path="oauth/callback" element={<OAuth2CallbackPage />} />
           </Routes>
         </BrowserRouter>

@@ -25,5 +25,5 @@ export function createSpotifyAuthConfig(
     throw new Error('Missing required Spotify OAuth configuration');
   }
 
-  return config;
+  return config as SpotifyAuthConfig;
 }

@@ -6,8 +6,7 @@ import {
   ConvertLinkButtonMobile,
   ConvertLinkForm,
 } from "../../assets/convert-link.form.common";
-import { useShallow } from "zustand/react/shallow";
-import { useConvertingStore } from "@/lib/store/converting.store";
+
 import { SongsListMobile } from "../../assets/mobile/songs.list.mobile";
 import { ConvertPageMobileUI } from "./mobile.ui";
 import { ConvertPageDesktopUI } from "./desktop.ui";
@@ -15,13 +14,10 @@ import { cn } from "@/lib/utils";
 import { SongListDesktop } from "../../assets/desktop/song.list.desktop";
 import { UIWrapper } from "../../assets/ui.wrapper";
 import { motion } from "motion/react";
+import { useMatch } from "react-router";
 export default function ConvertPage() {
   const isMobile = useViewType(ViewType.Mobile);
-  const { isSubmitted } = useConvertingStore(
-    useShallow((state) => ({
-      isSubmitted: state.isSubmitted,
-    }))
-  );
+  const isSubmitted = useMatch("/converted");
 
   return (
     <>
@@ -40,7 +36,7 @@ export default function ConvertPage() {
         </motion.div>
 
         {/* desktop only song list */}
-        {!isMobile && <SongListDesktop />}
+        {!isMobile && isSubmitted && <SongListDesktop />}
       </div>
 
       {/* for ui */}

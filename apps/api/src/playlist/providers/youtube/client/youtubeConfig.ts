@@ -13,15 +13,15 @@ export function createYouTubeApiConfig(
   const config = {
     baseUrl: configService.get<string>('YOUTUBE_BASE_URL'),
     apiLimitPerSecond: parseInt(
-      configService.get<string>('YOUTUBE_API_LIMIT_PER_SECOND'),
+      configService.get<string>('YOUTUBE_API_LIMIT_PER_SECOND') || '1',
     ),
     apiLimitPerMinute: parseInt(
-      configService.get<string>('YOUTUBE_API_LIMIT_PER_MINUTE'),
+      configService.get<string>('YOUTUBE_API_LIMIT_PER_MINUTE') || '1',
     ),
     apiLimitQueueSize: parseInt(
-      configService.get<string>('YOUTUBE_API_LIMIT_QUEUE_SIZE'),
+      configService.get<string>('YOUTUBE_API_LIMIT_QUEUE_SIZE') || '1',
     ),
-    batchSize: parseInt(configService.get<string>('YOUTUBE_BATCH_SIZE')),
+    batchSize: parseInt(configService.get<string>('YOUTUBE_BATCH_SIZE') || '1'),
   };
 
   if (
@@ -36,5 +36,5 @@ export function createYouTubeApiConfig(
     );
   }
 
-  return config;
+  return config as YouTubeConfig;
 }

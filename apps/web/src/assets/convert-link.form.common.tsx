@@ -21,12 +21,11 @@ import { useShallow } from "zustand/react/shallow";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { Input } from "@/components/ui/input";
-import { cn, validateOAuthState } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useOAuth2Store } from "@/lib/store/oauth2.store";
 import { handleOAuthCallback } from "@/lib/utils";
-import { useOAuthMessage } from "@/lib/hooks/use-oauth";
 import { v4 as uuidv4 } from "uuid";
-
+import { useNavigate, useMatch } from "react-router";
 const convertLinkFormVarient = {
   defaultMobile: { y: (window.innerHeight * 2) / 9 },
   defaultDesktop: { y: (window.innerHeight * 2) / 9 },
@@ -44,29 +43,34 @@ const convertLinkFormVarient = {
 
 export function ConvertLinkForm({ isMobile }: { isMobile: boolean }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const isSubmitted = useMatch("/converted");
   const [link, setLink] = useState("");
+
   const {
+    apiDomain,
+    link: linkFromOAuth2Store,
     setLink: setLinkFromOAuth2Store,
-    state,
     setState,
+    clear,
+    authorizationCode,
   } = useOAuth2Store(
     useShallow((state) => ({
       link: state.link,
+      apiDomain: state.apiDomain,
       setLink: state.setLink,
-      state: state.state,
       setState: state.setState,
+      clear: state.clear,
+      authorizationCode: state.authorizationCode,
     }))
   );
 
-  const { apiDomain, setIsConverting, setIsSubmitted, isSubmitted } =
-    useConvertingStore(
-      useShallow((state) => ({
-        apiDomain: state.apiDomain,
-        setIsConverting: state.setIsConverting,
-        setIsSubmitted: state.setIsSubmitted,
-        isSubmitted: state.isSubmitted,
-      }))
-    );
+  const { setIsConverting } = useConvertingStore(
+    useShallow((state) => ({
+      setIsConverting: state.setIsConverting,
+    }))
+  );
+
   const { mutate, isPending } = useMutation<
     PlaylistConvertResponse,
     Error,
@@ -78,6 +82,7 @@ export function ConvertLinkForm({ isMobile }: { isMobile: boolean }) {
     onSuccess: (response) => {
       if ("playlist" in response) {
         queryClient.setQueryData(["convert", [link, apiDomain]], response);
+        clear();
         return;
       }
       if ("authUrl" in response) {
@@ -88,48 +93,41 @@ export function ConvertLinkForm({ isMobile }: { isMobile: boolean }) {
     onError: (error) => {
       console.error(error);
     },
-  });
-
-  useOAuthMessage(
-    {
-      onSuccess: async (authCode, receivedState) => {
-        try {
-          if (!state) {
-            throw new Error("State is null");
-          }
-          if (!validateOAuthState(state, receivedState)) {
-            throw new Error("Invalid state");
-          }
-          mutate({
-            link: link,
-            apiDomain,
-            authorizationCode: authCode,
-            state: JSON.stringify(state),
-          });
-        } catch (error) {
-          console.error(error);
-        }
-      },
-      onError: (error) => {
-        console.error(error);
-      },
+    onSettled: () => {
+      setIsConverting(false);
     },
-    apiDomain,
-    [state]
-  );
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!link) return;
-    const newState = { domain: apiDomain, id: uuidv4() };
-    setState(newState);
-    setLinkFromOAuth2Store(link);
-    mutate({ link, apiDomain });
-    setIsSubmitted(true);
-  };
+  });
 
   useEffect(() => {
     setIsConverting(isPending);
   }, [isPending, setIsConverting]);
+
+  useEffect(() => {
+    if (linkFromOAuth2Store && apiDomain) {
+      setLink(linkFromOAuth2Store);
+      mutate({
+        link: linkFromOAuth2Store,
+        apiDomain,
+        authorizationCode: authorizationCode ?? undefined,
+      });
+    }
+  }, [linkFromOAuth2Store, apiDomain, mutate, authorizationCode]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!link || !apiDomain) return;
+    if (!isSubmitted) {
+      navigate("convert");
+    }
+    const newState = { domain: apiDomain, id: uuidv4() };
+    setState(newState);
+    setLinkFromOAuth2Store(link);
+    mutate({
+      link,
+      apiDomain,
+      authorizationCode: authorizationCode ?? undefined,
+    });
+  };
 
   return (
     <motion.form
@@ -173,10 +171,8 @@ const convertLinkButtonVarient = {
 };
 
 export function ConvertLinkButtonMobile() {
+  const isSubmitted = useMatch("/converted");
   const { isConverting } = useConvertingStore(useShallow((state) => state));
-  const isSubmitted = useConvertingStore(
-    useShallow((state) => state.isSubmitted)
-  );
   return (
     <motion.div
       variants={convertLinkButtonVarient}
@@ -214,8 +210,11 @@ export function ConvertLinkButtonDesktop() {
 }
 
 export default function ApiDomainSwitcher() {
-  const { apiDomain, setApiDomain } = useConvertingStore(
-    useShallow((state) => state)
+  const { apiDomain, setApiDomain } = useOAuth2Store(
+    useShallow((state) => ({
+      apiDomain: state.apiDomain,
+      setApiDomain: state.setApiDomain,
+    }))
   );
 
   return (
@@ -223,7 +222,7 @@ export default function ApiDomainSwitcher() {
       <DropdownMenuTrigger className="flex items-center gap-2 bg-accent py-2.5 px-3 rounded-lg">
         <Avatar className="rounded-lg h-8 w-8">
           <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
-            {apiDomain[0]}
+            {apiDomain?.[0]}
           </AvatarFallback>
         </Avatar>
         <div className="text-start flex flex-col gap-1 leading-none">

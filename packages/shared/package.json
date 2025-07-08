@@ -19,5 +19,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
+  },
+  "turbo": {
+    "outputs": [
+      "dist/**"
+    ]
   }
 }

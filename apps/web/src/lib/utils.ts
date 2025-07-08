@@ -8,7 +8,10 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function handleOAuthCallback(response: AuthRequiredResponse) {
-  return null;
+  if (!("authUrl" in response)) {
+    return;
+  }
+  window.location.href = response.authUrl;
 }
 
 export function validateOAuthState(state: OAuthState, receivedState: string) {

@@ -1,5 +1,6 @@
 import { ApiDomain } from "@repo/shared";
 import { useEffect } from "react";
+import { useOAuth2Store } from "../store/oauth2.store";
 
 export type OAuthState = {
   domain: ApiDomain;
@@ -44,7 +45,6 @@ export function useOAuthMessage(
         }
 
         await onSuccess(code, state);
-        // eslint-disable-next-line no-unused-vars
       } catch (error) {
         onError(error as Error);
       }
@@ -56,4 +56,13 @@ export function useOAuthMessage(
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dependencies);
+}
+
+export function useOAuthCallback(link: string, state: OAuthState) {
+  const { setState, setLink } = useOAuth2Store();
+
+  useEffect(() => {
+    setState(state);
+    setLink(link);
+  }, [state, link, setState, setLink]);
 }

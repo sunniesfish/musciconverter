@@ -47,6 +47,8 @@ RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key
 # ========================================
 FROM base AS pruner
 WORKDIR /app
+# 루트의 핵심 파일 복사 (컨텍스트가 루트일 때만 동작)
+COPY ../../pnpm-lock.yaml ../../pnpm-workspace.yaml ../../turbo.json ./
 COPY . .
 RUN pnpm dlx turbo prune --scope=api --docker
 
